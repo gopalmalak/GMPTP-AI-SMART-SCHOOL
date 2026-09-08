@@ -1,0 +1,72 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions for multi-tenant isolation
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isSuperAdmin() {
+      return isAuthenticated() && request.auth.token.role == 'SUPER_ADMIN';
+    }
+    
+    function isTenantUser(schoolId) {
+      return isAuthenticated() && (request.auth.token.school_id == schoolId || schoolId in request.auth.token.linked_school_ids);
+    }
+    
+    function isTenantPrincipal(schoolId) {
+      return isTenantUser(schoolId) && request.auth.token.role == 'PRINCIPAL';
+    }
+    
+    function isTenantTeacher(schoolId) {
+      return isTenantUser(schoolId) && request.auth.token.role == 'TEACHER';
+    }
+
+    // Super Admin global system settings
+    match /system_config/{configId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin();
+    }
+
+    // Multi-tenant School Document Tree
+    match /schools/{schoolId} {
+      allow read: if isTenantUser(schoolId) || isSuperAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if isTenantPrincipal(schoolId) || isSuperAdmin();
+
+      // Students collection within tenant
+      match /students/{studentId} {
+        allow read: if isTenantUser(schoolId);
+        allow write: if isTenantPrincipal(schoolId) || isTenantTeacher(schoolId) || isSuperAdmin();
+      }
+
+      // Attendance records within tenant
+      match /attendance/{attendanceId} {
+        allow read: if isTenantUser(schoolId);
+        allow create, update: if isTenantTeacher(schoolId) || isTenantPrincipal(schoolId) || isSuperAdmin();
+        allow delete: if isTenantPrincipal(schoolId) || isSuperAdmin();
+      }
+
+      // Fees collection & approval records within tenant
+      match /fees/{feeId} {
+        allow read: if isTenantUser(schoolId);
+        allow create: if isTenantTeacher(schoolId) || isTenantPrincipal(schoolId);
+        allow update: if isTenantPrincipal(schoolId) || isSuperAdmin();
+        allow delete: if isTenantPrincipal(schoolId) || isSuperAdmin();
+      }
+
+      // Transport & GPS bus telemetry
+      match /buses/{busId} {
+        allow read: if isTenantUser(schoolId);
+        allow write: if isTenantUser(schoolId);
+      }
+
+      // Media gallery items
+      match /gallery/{itemId} {
+        allow read: if isTenantUser(schoolId);
+        allow write: if isTenantPrincipal(schoolId) || isSuperAdmin();
+      }
+    }
+  }
+}

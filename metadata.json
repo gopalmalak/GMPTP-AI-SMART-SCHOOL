@@ -1,0 +1,6 @@
+{
+  "name": "GMPTP AI स्कूल मैनेजमेंट App",
+  "description": "Commercial-grade bilingual multi-tenant School Management System with MPIN/biometric login, multi-school switching, RTE fee ledgers, live GPS transport, AI Suvichar, and AI exam scanner.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

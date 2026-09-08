@@ -1,0 +1,24 @@
+{
+  "rules": {
+    "system_health": {
+      ".read": "auth != null",
+      ".write": "auth != null && auth.token.role === 'SUPER_ADMIN'"
+    },
+    "schools": {
+      "$schoolId": {
+        ".read": "auth != null && (auth.token.school_id === $schoolId || auth.token.role === 'SUPER_ADMIN')",
+        ".write": "auth != null && (auth.token.school_id === $schoolId || auth.token.role === 'SUPER_ADMIN')",
+        "gps_telemetry": {
+          "$busId": {
+            ".read": "auth != null && (auth.token.school_id === $schoolId || auth.token.role === 'SUPER_ADMIN')",
+            ".write": "auth != null && (auth.token.role === 'DRIVER' || auth.token.role === 'PRINCIPAL' || auth.token.role === 'SUPER_ADMIN')"
+          }
+        },
+        "live_teacher_feeds": {
+          ".read": "auth != null && (auth.token.school_id === $schoolId || auth.token.role === 'SUPER_ADMIN')",
+          ".write": "auth != null && (auth.token.school_id === $schoolId || auth.token.role === 'SUPER_ADMIN')"
+        }
+      }
+    }
+  }
+}
