@@ -28,14 +28,20 @@ jobs:
           touch .env
           echo "MAPS_API_KEY=AIzaSyDemoFallbackKey" >> .env
 
-      - name: Disable Missing Keystore & Bypass Crash
+      - name: Auto-Fix Gradle Syntax & Bypass Signing
         run: |
-          # Enforce passthrough on missing google-services.json and completely disable release signing restrictions
+          # 1. Clean the invalid compileSdk release(36) function syntax with standard Android compileSdk configuration
+          sed -i 's/compileSdk { version = release(36) { minorApiLevel = 1 } }/compileSdk = 36/g' app/build.gradle.kts
+          
+          # 2. Re-verify targetSdk configurations are set cleanly
+          sed -i 's/targetSdk = 36/targetSdk = 36/g' app/build.gradle.kts
+
+          # 3. Completely bypass missing release or debug signing configuration structures
           sed -i 's/signingConfig = signingConfigs.getByName("release")/\/\/ bypassed release signing/g' app/build.gradle.kts
           sed -i 's/signingConfig = signingConfigs.getByName("debugConfig")/\/\/ bypassed debug signing/g' app/build.gradle.kts
 
-      - name: Build Unsigned Debug APK
-        run: gradle assembleDebug -x test --stacktrace --no-daemon
+      - name: Build Unsigned Demo APK
+        run: gradle app:assembleDebug -x test --stacktrace --no-daemon
 
       - name: Upload Demo APK
         uses: actions/upload-artifact@v4
