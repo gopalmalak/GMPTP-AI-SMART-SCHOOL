@@ -28,23 +28,24 @@ jobs:
           touch .env
           echo "MAPS_API_KEY=AIzaSyDemoFallbackKey" >> .env
 
-      - name: Auto-Fix Compile Strategy & Build Properties
+      - name: Hard Reset Invalid Syntax & Disable Cache
         run: |
-          # 1. Clean the restrictive compiler execution strategy causing cloud process blocks
+          # 1. Kill the restrictive Configuration Cache forcing the error repeat
           if [ -f "gradle.properties" ]; then
-            sed -i 's/kotlin.compiler.execution.strategy=in-process/# bypassed strategy/g' gradle.properties
+            sed -i 's/org.gradle.configuration-cache=true/org.gradle.configuration-cache=false/g' gradle.properties
+            sed -i 's/kotlin.compiler.execution.strategy=in-process/# strategy bypass/g' gradle.properties
           fi
           
-          # 2. Fix the invalid compileSdk function syntax in build.gradle.kts
+          # 2. Force overwrite the entire invalid compileSdk line with standard clean Android configuration
           sed -i 's/compileSdk { version = release(36) { minorApiLevel = 1 } }/compileSdk = 36/g' app/build.gradle.kts
-          sed -i 's/targetSdk = 36/targetSdk = 36/g' app/build.gradle.kts
-
-          # 3. Bypass release and debug signing configs
+          sed -i 's/compileSdk { version = release(36) { minorApiLevel = 1 } }/compileSdk = 36/g' app/build.gradle.kts || true
+          
+          # 3. Bypass release and debug signing configs to ensure clean output
           sed -i 's/signingConfig = signingConfigs.getByName("release")/\/\/ bypassed release signing/g' app/build.gradle.kts
           sed -i 's/signingConfig = signingConfigs.getByName("debugConfig")/\/\/ bypassed debug signing/g' app/build.gradle.kts
 
-      - name: Build Unsigned Demo APK
-        run: gradle app:assembleDebug -x test --stacktrace --no-daemon
+      - name: Clean and Build Unsigned Demo APK
+        run: gradle clean app:assembleDebug -x test --stacktrace --no-daemon --no-configuration-cache
 
       - name: Upload Demo APK
         uses: actions/upload-artifact@v4
