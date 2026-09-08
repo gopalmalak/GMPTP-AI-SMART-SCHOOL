@@ -20,16 +20,16 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
+      - name: Setup Gradle System
+        uses: gradle/actions/setup-gradle@v3
+
       - name: Setup Environment Placeholder
         run: |
           touch .env
           echo "MAPS_API_KEY=AIzaSyDemoFallbackKey" >> .env
 
-      - name: Grant Execute Permission for Gradlew
-        run: chmod +x gradlew
-
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace --no-daemon
+        run: gradle assembleDebug --stacktrace --no-daemon
 
       - name: Upload Demo APK
         uses: actions/upload-artifact@v4
